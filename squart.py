@@ -54,6 +54,8 @@ while cap.isOpened():
                         direction = 1
                 else:
                     feedback = "Fix Form"
+                    # form = 0
+
 
             if per < 15:
                 if not len(arr):
@@ -75,6 +77,7 @@ while cap.isOpened():
 
         print(count)
 
+
         # Draw Bar
         if form == 1:
             cv2.rectangle(img, (580, 50), (600, 380), (0, 255, 0), 3)
@@ -91,10 +94,13 @@ while cap.isOpened():
         cv2.rectangle(img, (500, 0), (640, 40), (255, 255, 255), cv2.FILLED)
         cv2.putText(img, feedback, (500, 40), cv2.FONT_HERSHEY_PLAIN, 2,
                     (0, 255, 0), 2)
-
+    else:
+        if len(arr):
+            arr.pop()
     cv2.imshow('Pushup counter', img)
     if cv2.waitKey(10) & 0xFF == ord('q'):
         break
+
 
 cap.release()
 cv2.destroyAllWindows()
