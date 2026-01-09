@@ -12,6 +12,9 @@ import voice_control_module
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from PIL import Image, ImageTk
+import ai_coach_module
+import face_emotion_module
+import auto_detect_module
 
 class FitnessApp(ctk.CTk):
     def __init__(self):
@@ -130,23 +133,24 @@ class FitnessApp(ctk.CTk):
             return card
 
         # Row 0
-        create_card(0, 0, "Pushups", "💪", self.start_pushup, color="#E57373")
-        create_card(0, 1, "Shoulder Press", "🏋️", self.start_shoulder_press, color="#64B5F6")
-        
+        create_card(0, 0, "Auto Detect", "🤖", self.start_auto_mode, color="#7C4DFF")
+        create_card(0, 1, "Pushups", "💪", self.start_pushup, color="#E57373")
+
         # Row 1
-        create_card(1, 0, "Squats", "🦵", self.start_squat, color="#81C784")
-        create_card(1, 1, "Plank", "🧘", self.start_plank, color="#FFB74D")
+        create_card(1, 0, "Shoulder Press", "🏋️", self.start_shoulder_press, color="#64B5F6")
+        create_card(1, 1, "Squats", "🦵", self.start_squat, color="#81C784")
         
         # Row 2
-        create_card(2, 0, "Jumping Jacks", "🏃", self.start_jumping_jack, color="#BA68C8")
-        create_card(2, 1, "High Knees", "🦵", self.start_high_knees, color="#4DB6AC")
+        create_card(2, 0, "Jumping Jacks", "🏃", self.start_jumping_jack, color="#FFD54F")
+        create_card(2, 1, "Plank", "🧘", self.start_plank, color="#BA68C8")
         
         # Row 3
-        create_card(3, 0, "Bicep Curls", "💪", self.start_bicep_curl, color="#FF8A65")
-        create_card(3, 1, "Crunches", "🍫", self.start_crunches, color="#90A4AE")
-        
+        create_card(3, 0, "High Knees", "🦵", self.start_high_knees, color="#4DB6AC")
+        create_card(3, 1, "Bicep Curls", "💪", self.start_bicep_curl, color="#FF8A65")
+
         # Row 4
-        create_card(4, 0, "Lunges", "🚶", self.start_lunge, color="#7986CB")
+        create_card(4, 0, "Crunches", "🍫", self.start_crunches, color="#8D6E63")
+        create_card(4, 1, "Lunges", "🚶", self.start_lunge, color="#7986CB")
 
         # Create History Frame
         self.history_frame = ctk.CTkFrame(self, corner_radius=0, fg_color="transparent")
@@ -377,10 +381,6 @@ class FitnessApp(ctk.CTk):
         canvas.draw()
         canvas.get_tk_widget().pack(expand=True, fill="both")
 
-    def update_analytics(self):
-        # ... existing code ...
-        pass # Placeholder to signify where this goes relative to file, see actual implementation below
-
     def update_user_stats_display(self):
         xp, level, total_reps, streak = database.get_user_stats()
         self.level_label.configure(text=f"Level: {level}")
@@ -506,6 +506,14 @@ class FitnessApp(ctk.CTk):
             self.run_exercise_thread(crunches_module.run_crunches)
         except ImportError:
              messagebox.showerror("Error", "Crunches module not found.")
+
+    def start_auto_mode(self):
+        tutorial_module.show_tutorial(self, "Auto Detect Mode")
+        try:
+            import auto_detect_module
+            self.run_exercise_thread(auto_detect_module.run_auto_mode)
+        except ImportError:
+             messagebox.showerror("Error", "Auto Detect module not found.")
 
     def settings_button_event(self):
         self.open_language_dialog()
