@@ -1,51 +1,108 @@
-# AI Fitness Tracker
+# 🏋️ AI Fitness Tracker
 
-A computer vision-based fitness tracking application that monitors your form and counts repetitions for various exercises using OpenCV and MediaPipe.
+**The Ultimate Smart Workout Companion powered by Computer Vision & Artificial Intelligence.**
 
-## Features
+![Fitness AI](assets/logo.png)
 
-- **Pushup Counter**: Tracks pushups with form correction feedback (Up/Down/Fix Form).
-- **Squat Counter**: Monitors squat depth and counts repetitions.
-- **Jumping Jacks**: Tracks jumping jack movements.
-- **Real-time Feedback**: Visual feedback on the video feed including rep counts and form status.
+This application uses your webcam to analyze your exercise form in real-time, count reps, and provide AI coaching feedback. It features a modern GUI, gamification (XP, Levels), and hands-free voice control.
 
-## Prerequisites
+---
 
-- Python 3.10 (recommended for MediaPipe compatibility)
-- Webcam
+## 🌟 Key Features
 
-## Installation
+### 🧠 Advanced AI & Computer Vision
+*   **AI Coach**: Real-time form analysis giving feedback like "Go Lower", "Straighten Back".
+*   **Rep Quality Score**: Get a grade (0-100%) for every rep based on your form precision.
+*   **Face Emotion Detection** 😃/😫: Detects if you are happy or straining during a workout.
+*   **Tempo Analysis**: Tracks your eccentric/concentric speed (e.g., "1.5s down / 1.0s up").
+*   **Voice Command Control** 🎙️: Completely hands-free navigation.
 
-1. Clone the repository or download the source code.
-2. Install the required dependencies:
+### 🎮 Gamification
+*   **Level System**: Earn XP for every rep. Level up from Bronze to Diamond.
+*   **Achievements**: Unlock badges like "Early Bird", "Squat King", "Iron Man".
+*   **Streaks**: Maintain a daily workout streak.
+
+### 📊 Exercises Supported
+*   💪 **Pushups** (Chest/Triceps)
+*   🦵 **Squats** (Legs/Glutes)
+*   🏃 **Jumping Jacks** (Cardio)
+*   💪 **Bicep Curls** (Arms)
+*   🏋️ **Shoulder Press** (Delts)
+*   🚶 **Lunges** (Legs)
+*   🧘 **Plank** (Core Stability)
+*   🦵 **High Knees** (Cardio)
+*   🍫 **Crunches** (Abs)
+
+### 🛠️ Utilities
+*   **Analytics Dashboard**: Visual graphs of your reps and calories.
+*   **BMI Calculator**: Track your body metrics.
+*   **PDF Export**: Download session reports.
+*   **Localization**: Support for English and Hindi (हिंदी).
+
+---
+
+## 💻 Installation
+
+### Prerequisites
+*   Python 3.10 or higher
+*   Webcam
+
+### Steps
+1.  **Clone the repository**:
+    ```bash
+    git clone https://github.com/adityarajbisoyi/a4fitness.git
+    cd a4fitness
+    ```
+
+2.  **Install Dependencies**:
+    ```bash
+    pip install -r requirements.txt
+    ```
+
+---
+
+## 🚀 How to Run
+
+Simply run the main application file:
 
 ```bash
-pip install opencv-python mediapipe==0.10.5 numpy
-```
-*Note: MediaPipe version `0.10.5` is recommended to ensure compatibility with the provided code.*
-
-## Usage
-
-### Main Application (Pushups)
-To start the main pushup counter:
-
-```bash
-python main.py
+python app.py
 ```
 
-### Other Exercises
-You can run specific exercise trackers by executing their respective scripts:
+The graphical interface will launch. Select an exercise card to begin!
 
-- **Squats**: `python squart.py`
-- **Jumping Jacks**: `python jumping_jack.py`
-- **Cardio**: `python cardio.py`
+---
 
-## Controls
-- Press `q` to quit the application window.
+## 🎙️ Voice Commands
 
-## Structure
-- `PoseModule.py`: Core module containing the `poseDetector` class for landmark detection.
-- `main.py`: Main entry point (Pushup counter).
-- `improved.py`: An alternative or improved version of the tracker.
-- `squart.py`: Squat tracking implementation.
-- `jumping_jack.py`: Jumping jack tracking implementation.
+You can control the app hands-free! Try saying:
+
+| Command | Action |
+| :--- | :--- |
+| **"Start Pushups"** | Launches Pushup Module |
+| **"Start Squats"** | Launches Squat Module |
+| **"Start Planks"** | Launches Plank Timer |
+| **"Go Home"** | Returns to Main Menu |
+| **"Show History"** | Opens History Tab |
+| **"Open Tools"** | Opens Utils Menu |
+| **"Stop"** | Stops current activity (in some contexts) |
+
+---
+
+## 📂 Project Structure
+
+*   `app.py`: Main GUI application (CustomTkinter).
+*   `PoseModule.py`: Core logic for MediaPipe Pose estimation.
+*   `ai_coach_module.py`: Logic for scoring form and analyzing movement.
+*   `face_emotion_module.py`: Face Mesh logic for emotion detection.
+*   `voice_control_module.py`: Background thread for speech recognition.
+*   `*_module.py`: Individual logic for exercises (e.g., `squat_module.py`).
+*   `database.py`: SQLite database management.
+
+---
+
+## 👨‍💻 Developer
+**Aditya Raj Bisoyi**
+
+---
+*Built with Python, OpenCV, MediaPipe, and CustomTkinter.*
