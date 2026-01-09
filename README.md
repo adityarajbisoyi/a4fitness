@@ -11,19 +11,20 @@ This application uses your webcam to analyze your exercise form in real-time, co
 ## 🌟 Key Features
 
 ### 🧠 Advanced AI & Computer Vision
-*   **🤖 Auto-Exercise Recognition (NEW)**: Automatically detects if you are doing Squats, Pushups, or Jumping Jacks without pressing any buttons.
+*   **🤖 Auto-Exercise Recognition (Auto Mode)**: Automatically detects if you are doing Squats, Pushups, or Jumping Jacks without pressing any buttons.
+*   **⚡ Velocity Training**: Tracks your rep speed (e.g., "0.8s ⚡ Power Rep!") to optimize hypertrophy vs strength.
+*   **⚖️ Auto Weight Detection**: Uses computer vision to detect dumbbell weight by color (Red=5kg, Blue=10kg).
 *   **AI Coach**: Real-time form analysis giving feedback like "Go Lower", "Straighten Back".
-*   **Rep Quality Score**: Get a grade (0-100%) for every rep based on your form precision.
 *   **Face Emotion Detection** 😃/😫: Detects if you are happy or straining during a workout.
-*   **Tempo Analysis**: Tracks your eccentric/concentric speed (e.g., "1.5s down / 1.0s up").
 *   **Voice Command Control** 🎙️: Completely hands-free navigation.
 
 ### 🎮 Gamification
+*   **📜 Daily Quests**: 3 random challenges every day (e.g., "Do 20 Pushups") to earn Bonus XP.
 *   **Level System**: Earn XP for every rep. Level up from Bronze to Diamond.
 *   **Achievements**: Unlock badges like "Early Bird", "Squat King", "Iron Man".
 *   **Streaks**: Maintain a daily workout streak.
 
-### 📊 Exercises Supported
+### 📊 Exercises & Tools
 *   💪 **Pushups** (Chest/Triceps)
 *   🦵 **Squats** (Legs/Glutes)
 *   🏃 **Jumping Jacks** (Cardio)
@@ -34,11 +35,11 @@ This application uses your webcam to analyze your exercise form in real-time, co
 *   🦵 **High Knees** (Cardio)
 *   🍫 **Crunches** (Abs)
 
-### 🛠️ Utilities
+### 🩺 Health & Utilities
+*   **Injury Modifiers (Health Profile)**: Select your injuries (e.g., Knee, Shoulder) and the AI automatically disables risky exercises.
 *   **Analytics Dashboard**: Visual graphs of your reps and calories.
 *   **BMI Calculator**: Track your body metrics.
 *   **PDF Export**: Download session reports.
-*   **Localization**: Support for English and Hindi (हिंदी).
 
 ---
 
@@ -70,9 +71,8 @@ Simply run the main application file:
 python app.py
 ```
 
-The graphical interface will launch. 
-*   **Click "🤖 Auto Detect"** (first card) to try the automatic mode.
-*   Or select any specific exercise card to begin.
+*   **Auto Mode**: Click "🤖 Auto Detect" to let the AI guess your workout.
+*   **Weight Scanner**: Run `python weight_detect_module.py` to calibrate weights.
 
 ---
 
@@ -84,23 +84,23 @@ You can control the app hands-free! Try saying:
 | :--- | :--- |
 | **"Start Pushups"** | Launches Pushup Module |
 | **"Start Squats"** | Launches Squat Module |
-| **"Start Planks"** | Launches Plank Timer |
+| **"Start Auto Mode"** | Launches Auto Recognition |
 | **"Go Home"** | Returns to Main Menu |
 | **"Show History"** | Opens History Tab |
-| **"Open Tools"** | Opens Utils Menu |
-| **"Stop"** | Stops current activity (in some contexts) |
+| **"Stop"** | Stops current activity |
 
 ---
 
 ## 📂 Project Structure
 
 *   `app.py`: Main GUI application (CustomTkinter).
-*   `auto_detect_module.py`: **Logic for Automatic Exercise Recognition.**
+*   `auto_detect_module.py`: Logic for Automatic Exercise Recognition.
+*   `weight_detect_module.py`: HSV Color masking for dumbells.
+*   `gamification_module.py`: Quests, XP, and Badges logic.
 *   `PoseModule.py`: Core logic for MediaPipe Pose estimation.
-*   `ai_coach_module.py`: Logic for scoring form and analyzing movement.
+*   `ai_coach_module.py`: Logic for scoring form, velocity, and mechanics.
 *   `face_emotion_module.py`: Face Mesh logic for emotion detection.
 *   `voice_control_module.py`: Background thread for speech recognition.
-*   `*_module.py`: Individual logic for exercises (e.g., `squat_module.py`).
 *   `database.py`: SQLite database management.
 
 ---

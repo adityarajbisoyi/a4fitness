@@ -49,12 +49,28 @@ class AICoach:
         if knee_angle < 80:
             score = 100
             feedback = "Perfect Depth! 🔥"
+            # If we just reached max depth, record the duration of the eccentric phase
+            if self.is_moving_down:
+                self.last_rep_duration = time.time() - self.rep_start_time
+                self.is_moving_down = False # Now starting concentric phase
+            self.rep_start_time = time.time() # Reset for concentric phase timing
         elif 80 <= knee_angle <= 100:
             score = 90
             feedback = "Good Depth"
+            # If moving down and not yet at max depth, start/continue timing
+            if not self.is_moving_down and self.rep_start_time == 0: # First detection of movement down
+                self.rep_start_time = time.time()
+                self.is_moving_down = True
+            elif not self.is_moving_down and self.rep_start_time != 0: # Moving up from max depth
+                # This is a simplified check. Ideally we track per-rep cycle in the main loop.
+                # For now, we just reset if we are moving up and not at max depth.
+                self.rep_start_time = 0
         elif 100 < knee_angle <= 130:
             score = 60
             feedback = "Go Lower!"
+            if not self.is_moving_down and self.rep_start_time == 0: # First detection of movement down
+                self.rep_start_time = time.time()
+                self.is_moving_down = True
         else:
             score = 10
             feedback = "Squat Down"

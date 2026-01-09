@@ -43,6 +43,19 @@ def init_db():
         )
     ''')
     
+    # Create Quests table
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS quests (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            date DATE DEFAULT CURRENT_DATE,
+            description TEXT,
+            target INTEGER,
+            current INTEGER DEFAULT 0,
+            completed BOOLEAN DEFAULT 0,
+            reward_xp INTEGER
+        )
+    ''')
+    
     # Initialize default user if not exists
     cursor.execute('SELECT count(*) FROM users')
     if cursor.fetchone()[0] == 0:
@@ -100,6 +113,10 @@ def save_session(exercise_name, reps, calories=0):
 
     conn.commit()
     conn.close()
+    
+    # Check Quests
+    update_quest_progress(exercise_name, reps)
+    
     print(f"Saved session: {exercise_name} - {reps} reps - {calories:.2f} kcal - {xp_gain} XP")
 
 def get_history():
@@ -173,6 +190,52 @@ def update_user_stats(xp_gain, reps_gain):
     cursor.execute('UPDATE users SET xp=?, level=?, total_reps=?, last_active=CURRENT_DATE WHERE id=1', (new_xp, new_level, new_reps))
     conn.commit()
     conn.close()
+
+def get_active_quests():
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+    cursor.execute("SELECT id, description, target, current, completed, reward_xp FROM quests WHERE date = CURRENT_DATE")
+    rows = cursor.fetchall()
+    conn.close()
+    return rows
+
+def add_quest(description, target, reward_xp):
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+    cursor.execute("INSERT INTO quests (description, target, reward_xp) VALUES (?, ?, ?)", (description, target, reward_xp))
+    conn.commit()
+    conn.close()
+
+def update_quest_progress(exercise_name, reps_added):
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+    
+    # Find active quests matching this exercise
+    # Using simple string matching for now
+    cursor.execute("SELECT id, description, target, current, completed, reward_xp FROM quests WHERE date = CURRENT_DATE AND completed = 0")
+    active_quests = cursor.fetchall()
+    
+    completed_any = False
+    
+    for q in active_quests:
+        qid, desc, target, current, completed, reward = q
+        
+        # Check if exercise matches quest description (e.g. "Do 20 Pushups" contains "Pushups")
+        if exercise_name in desc:
+            new_current = min(target, current + reps_added)
+            new_completed = 1 if new_current >= target else 0
+            
+            cursor.execute("UPDATE quests SET current=?, completed=? WHERE id=?", (new_current, new_completed, qid))
+            
+            if new_completed and not completed:
+                # Grant Bonus XP
+                cursor.execute("UPDATE users SET xp = xp + ? WHERE id=1", (reward,))
+                print(f"Quest Completed! +{reward} XP")
+                completed_any = True
+                
+    conn.commit()
+    conn.close()
+    return completed_any
 
 # Initialize DB on import
 init_db()
