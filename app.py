@@ -32,7 +32,7 @@ class FitnessApp(ctk.CTk):
         self.navigation_frame.grid(row=0, column=0, sticky="nsew")
 
 
-        self.navigation_frame.grid_rowconfigure(7, weight=1) # Push empty space to bottom, keeping buttons at top
+        self.navigation_frame.grid_rowconfigure(9, weight=1) # Push empty space to bottom, keeping buttons at top
 
         # Home Button
         self.home_button = ctk.CTkButton(self.navigation_frame, corner_radius=10, height=45, border_spacing=15, 
@@ -65,6 +65,14 @@ class FitnessApp(ctk.CTk):
                                         anchor="w", font=ctk.CTkFont(size=15, weight="bold"),
                                         command=self.settings_button_event)
         self.settings_button.grid(row=4, column=0, sticky="ew", padx=10, pady=5)
+        
+        # Health Profile (Injury Modifiers)
+        self.health_btn = ctk.CTkButton(self.navigation_frame, corner_radius=10, height=45, border_spacing=15, 
+                                        text="🩺  Health Profile",
+                                        fg_color="transparent", text_color=("gray10", "gray90"), hover_color=("gray70", "gray30"),
+                                        anchor="w", font=ctk.CTkFont(size=15, weight="bold"),
+                                        command=self.open_health_profile)
+        self.health_btn.grid(row=5, column=0, sticky="ew", padx=10, pady=5)
 
         # Achievements Button
         self.achievements_button = ctk.CTkButton(self.navigation_frame, corner_radius=10, height=45, border_spacing=15, 
@@ -72,15 +80,25 @@ class FitnessApp(ctk.CTk):
                                         fg_color="transparent", text_color=("gray10", "gray90"), hover_color=("gray70", "gray30"),
                                         anchor="w", font=ctk.CTkFont(size=15, weight="bold"),
                                         command=self.achievements_button_event)
-        self.achievements_button.grid(row=5, column=0, sticky="ew", padx=10, pady=5)
-
+        self.achievements_button.grid(row=6, column=0, sticky="ew", padx=10, pady=5)
+        
         # Tools Button
         self.tools_button = ctk.CTkButton(self.navigation_frame, corner_radius=10, height=45, border_spacing=15, 
                                         text="🛠️  Tools",
                                         fg_color="transparent", text_color=("gray10", "gray90"), hover_color=("gray70", "gray30"),
                                         anchor="w", font=ctk.CTkFont(size=15, weight="bold"),
                                         command=self.tools_button_event)
-        self.tools_button.grid(row=6, column=0, sticky="ew", padx=10, pady=5)
+        self.tools_button.grid(row=7, column=0, sticky="ew", padx=10, pady=5)
+
+        # Quests Display (Mini)
+        self.quest_label = ctk.CTkLabel(self.navigation_frame, text="📜 Daily Quests", 
+                                        font=ctk.CTkFont(size=14, weight="bold"))
+        self.quest_label.grid(row=8, column=0, padx=20, pady=(20,0), sticky="w")
+        
+        self.quest_list_frame = ctk.CTkFrame(self.navigation_frame, fg_color="transparent")
+        self.quest_list_frame.grid(row=8, column=0, padx=20, pady=5, sticky="ew")
+
+        self.navigation_frame.grid_rowconfigure(9, weight=1) # Spacer
 
 
         # Create home frame
@@ -122,13 +140,41 @@ class FitnessApp(ctk.CTk):
 
         # Helper to create exercise cards
         def create_card(row, col, title, icon, command, color="transparent"):
-            card = ctk.CTkButton(self.scroll_frame, text=f"{icon}\n\n{title}", 
-                                 font=ctk.CTkFont(size=16, weight="bold"),
+            # Check for Injury Restrictions
+            current_injuries = database.get_setting("injuries", "")
+            
+            # Map injuries to disabled exercises (title keywords)
+            restrictions = {
+                "knee": ["Squats", "Lunges", "High Knees", "Jumping Jacks"],
+                "shoulder": ["Pushups", "Shoulder Press", "Plank"],
+                "back": ["Squats", "Crunches", "Plank", "Lunge"],
+                "wrist": ["Pushups", "Plank"]
+            }
+            
+            is_disabled = False
+            reason = ""
+            for injury in current_injuries.split(','):
+                if injury in restrictions and title in restrictions[injury]:
+                    is_disabled = True
+                    reason = f"Avoid due to {injury} injury"
+                    break
+            
+            if is_disabled:
+                 card = ctk.CTkButton(self.scroll_frame, text=f"{icon}\n\n{title}\n⚠️ {reason}", 
+                                 font=ctk.CTkFont(size=14, weight="bold"),
                                  width=200, height=120,
                                  corner_radius=15,
-                                 fg_color=color, hover_color=("gray70", "gray30"),
-                                 border_width=2, border_color="gray50",
-                                 command=command)
+                                 fg_color="gray30", hover_color="gray30", state="disabled", # Disabled Look
+                                 border_width=2, border_color="gray20")
+            else:
+                card = ctk.CTkButton(self.scroll_frame, text=f"{icon}\n\n{title}", 
+                                     font=ctk.CTkFont(size=16, weight="bold"),
+                                     width=200, height=120,
+                                     corner_radius=15,
+                                     fg_color=color, hover_color=("gray70", "gray30"),
+                                     border_width=2, border_color="gray50",
+                                     command=command)
+                                     
             card.grid(row=row, column=col, padx=15, pady=15, sticky="ew")
             return card
 
@@ -221,7 +267,9 @@ class FitnessApp(ctk.CTk):
         self.running_exercise = False
         
         # Update stats initially
+        gamification_module.refresh_daily_quests()
         self.update_user_stats_display()
+        self.update_quest_display()
 
         # Voice Control
         self.voice_controller = voice_control_module.VoiceController(self.process_voice_command)
@@ -387,6 +435,32 @@ class FitnessApp(ctk.CTk):
         self.xp_label.configure(text=f"XP: {xp}")
         self.streak_label.configure(text=f"Streak: {streak} 🔥")
 
+    def update_quest_display(self):
+        # Clear previous
+        for widget in self.quest_list_frame.winfo_children():
+            widget.destroy()
+            
+        quests = database.get_active_quests()
+        if not quests:
+             ctk.CTkLabel(self.quest_list_frame, text="No active quests", font=ctk.CTkFont(size=12), text_color="gray").pack()
+             
+        for q in quests:
+            qid, desc, target, current, completed, reward = q
+            
+            if completed:
+                status_xml = "✅" 
+                color = "green"
+            else:
+                status_xml = "⬜"
+                color = "white"
+            
+            # Label: "⬜ Do 20 Pushups (5/20)"
+            lbl = ctk.CTkLabel(self.quest_list_frame, 
+                               text=f"{status_xml} {desc}\n    ({current}/{target})",
+                               font=ctk.CTkFont(size=12),
+                               text_color=color, anchor="w", justify="left")
+            lbl.pack(anchor="w", pady=2)
+
     def update_achievements(self):
         for widget in self.badges_frame.winfo_children():
             widget.destroy()
@@ -521,6 +595,35 @@ class FitnessApp(ctk.CTk):
     def check_language(self):
         if not database.get_setting("language"):
             self.open_language_dialog()
+
+    def open_health_profile(self):
+        dialog = ctk.CTkToplevel(self)
+        dialog.title("Health Profile / Injury Modifiers")
+        dialog.geometry("400x400")
+        dialog.attributes("-topmost", True)
+        
+        ctk.CTkLabel(dialog, text="Select Active Injuries", font=ctk.CTkFont(size=18, weight="bold")).pack(pady=10)
+        ctk.CTkLabel(dialog, text="The AI will disable harmful exercises.", font=ctk.CTkFont(size=12)).pack(pady=5)
+        
+        current_injuries = database.get_setting("injuries", "")
+        
+        vars = {
+            "knee": ctk.BooleanVar(value="knee" in current_injuries),
+            "shoulder": ctk.BooleanVar(value="shoulder" in current_injuries),
+            "back": ctk.BooleanVar(value="back" in current_injuries),
+            "wrist": ctk.BooleanVar(value="wrist" in current_injuries)
+        }
+        
+        for injury, var in vars.items():
+            ctk.CTkCheckBox(dialog, text=f"{injury.capitalize()} Injury", variable=var).pack(pady=10, anchor="w", padx=50)
+            
+        def save():
+            selected = [k for k, v in vars.items() if v.get()]
+            database.set_setting("injuries", ",".join(selected))
+            messagebox.showinfo("Saved", "Health Profile Updated! Restart app to apply restrictions.")
+            dialog.destroy()
+            
+        ctk.CTkButton(dialog, text="Save Profile", command=save, fg_color="green").pack(pady=20)
 
     def open_language_dialog(self):
         dialog = ctk.CTkToplevel(self)

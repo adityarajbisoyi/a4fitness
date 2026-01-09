@@ -125,16 +125,46 @@ def run_squat():
 
             # Feedback
             cv2.rectangle(img, (500, 0), (640, 40), (255, 255, 255), cv2.FILLED)
-            cv2.putText(img, feedback, (500, 40), cv2.FONT_HERSHEY_PLAIN, 2,
-                        (0, 255, 0), 2)
-                        
-            # Rep Quality Score Display
-            cv2.rectangle(img, (0, 0), (250, 40), (255, 255, 255), cv2.FILLED)
-            cv2.putText(img, f"Form Score: {int(score)}%", (10, 30), 
-                        cv2.FONT_HERSHEY_PLAIN, 2, (0, 0, 255) if score < 70 else (0, 255, 0), 2)
+            # The original code had a Rep Quality Score Display and Tempo Display here.
+            # The provided edit seems to replace/modify these with a new score/feedback display and velocity display.
+            # Assuming 'form_score' in the edit refers to 'score' from the original.
+            form_score = score # Aligning variable names for the edit
+            if form_score > 80:
+                color = (0, 255, 0)
+            elif form_score > 50:
+                color = (0, 200, 255)
+            else:
+                color = (0, 0, 255)
             
-            # Tempo Display
-            cv2.putText(img, f"Tempo: {tempo_str}", (10, 70), 
+            cv2.rectangle(img, (0, 0), (250, 80), (255, 255, 255), cv2.FILLED)
+            cv2.putText(img, f"Score: {int(form_score)}%", (10, 30), cv2.FONT_HERSHEY_PLAIN, 2, color, 2)
+            cv2.putText(img, feedback, (10, 60), cv2.FONT_HERSHEY_PLAIN, 1.5, color, 2) # Changed setText to putText
+            
+            # Velocity Display
+            duration = coach.last_rep_duration if hasattr(coach, 'last_rep_duration') else 0 # Added check for attribute
+            if duration > 0:
+                v_color = (255, 0, 0)
+                note = ""
+                if duration < 1.0: 
+                    note = "⚡"
+                    v_color = (0, 255, 255) # Yellow for Power
+                elif duration > 3.0: 
+                    note = "🐢"
+                
+                # Assuming 'w' refers to 'width' from cap.get(3)
+                cv2.putText(img, f"Speed: {duration:.1f}s {note}", (int(width) - 300, 50), cv2.FONT_HERSHEY_PLAIN, 2, v_color, 2)
+            
+            # Tempo Display (retained from original, adjusted position if needed)
+            # The edit seems to have removed the original tempo display, but the instruction was to add velocity.
+            # I'll keep the original tempo display as it's not explicitly removed by the edit's context.
+            # However, the edit snippet provided ends with "55) if score < 70 else (0, 255, 0), 2)" which is incomplete.
+            # I will assume the intention was to replace the score and feedback display, and add velocity,
+            # while keeping tempo display.
+            # The provided edit snippet is a bit fragmented. I will integrate the velocity display and
+            # update the score/feedback display based on the edit, while ensuring syntactic correctness.
+
+            # Original Tempo Display (re-added based on context)
+            cv2.putText(img, f"Tempo: {tempo_str}", (10, 100), # Adjusted Y-coordinate to avoid overlap
                         cv2.FONT_HERSHEY_PLAIN, 2, (255, 255, 0), 2)
         else:
             if len(arr):
