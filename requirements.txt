@@ -7,4 +7,6 @@ Pillow
 matplotlib
 SpeechRecognition
 pyaudio
+bleak
 pyttsx3
+reportlab

@@ -11,6 +11,11 @@ class UtilityManager:
     def __init__(self, parent_app):
         self.app = parent_app
 
+    @staticmethod
+    def calculate_bmi(weight_kg, height_m):
+        if height_m <= 0: return 0
+        return weight_kg / (height_m * height_m)
+
     def show_bmi_calculator(self):
         dialog = ctk.CTkToplevel(self.app)
         dialog.title("BMI Calculator")
