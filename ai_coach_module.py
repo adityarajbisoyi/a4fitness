@@ -3,7 +3,9 @@ import math
 
 class AICoach:
     def __init__(self):
-        pass
+        self.rep_start_time = 0
+        self.last_rep_duration = 0
+        self.is_moving_down = False
 
     def calculate_angle(self, lm_list, p1, p2, p3):
         """Calculates angle between three points p1-p2-p3"""

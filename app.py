@@ -14,7 +14,9 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from PIL import Image, ImageTk
 import ai_coach_module
 import face_emotion_module
+import face_emotion_module
 import auto_detect_module
+import bluetooth_module
 
 class FitnessApp(ctk.CTk):
     def __init__(self):
@@ -90,13 +92,14 @@ class FitnessApp(ctk.CTk):
                                         command=self.tools_button_event)
         self.tools_button.grid(row=7, column=0, sticky="ew", padx=10, pady=5)
 
-        # Quests Display (Mini)
-        self.quest_label = ctk.CTkLabel(self.navigation_frame, text="📜 Daily Quests", 
-                                        font=ctk.CTkFont(size=14, weight="bold"))
-        self.quest_label.grid(row=8, column=0, padx=20, pady=(20,0), sticky="w")
-        
-        self.quest_list_frame = ctk.CTkFrame(self.navigation_frame, fg_color="transparent")
-        self.quest_list_frame.grid(row=8, column=0, padx=20, pady=5, sticky="ew")
+        # Bluetooth Button (Sidebar)
+        self.ble_button = ctk.CTkButton(self.navigation_frame, corner_radius=10, height=45, border_spacing=15, 
+                                        text="📡  Connect Device",
+                                        fg_color="transparent", text_color=("gray10", "gray90"), hover_color=("gray70", "gray30"),
+                                        anchor="w", font=ctk.CTkFont(size=15, weight="bold"),
+                                        command=self.open_bluetooth_scanner)
+        self.ble_button.grid(row=8, column=0, sticky="ew", padx=10, pady=5)
+
 
         self.navigation_frame.grid_rowconfigure(9, weight=1) # Spacer
 
@@ -436,30 +439,8 @@ class FitnessApp(ctk.CTk):
         self.streak_label.configure(text=f"Streak: {streak} 🔥")
 
     def update_quest_display(self):
-        # Clear previous
-        for widget in self.quest_list_frame.winfo_children():
-            widget.destroy()
-            
-        quests = database.get_active_quests()
-        if not quests:
-             ctk.CTkLabel(self.quest_list_frame, text="No active quests", font=ctk.CTkFont(size=12), text_color="gray").pack()
-             
-        for q in quests:
-            qid, desc, target, current, completed, reward = q
-            
-            if completed:
-                status_xml = "✅" 
-                color = "green"
-            else:
-                status_xml = "⬜"
-                color = "white"
-            
-            # Label: "⬜ Do 20 Pushups (5/20)"
-            lbl = ctk.CTkLabel(self.quest_list_frame, 
-                               text=f"{status_xml} {desc}\n    ({current}/{target})",
-                               font=ctk.CTkFont(size=12),
-                               text_color=color, anchor="w", justify="left")
-            lbl.pack(anchor="w", pady=2)
+        # Quests UI removed by user request
+        pass
 
     def update_achievements(self):
         for widget in self.badges_frame.winfo_children():
@@ -624,6 +605,58 @@ class FitnessApp(ctk.CTk):
             dialog.destroy()
             
         ctk.CTkButton(dialog, text="Save Profile", command=save, fg_color="green").pack(pady=20)
+
+    def open_bluetooth_scanner(self):
+        dialog = ctk.CTkToplevel(self)
+        dialog.title("Bluetooth Scanner")
+        dialog.geometry("400x500")
+        dialog.attributes("-topmost", True)
+        
+        status_lbl = ctk.CTkLabel(dialog, text="Scanning for devices...", font=ctk.CTkFont(size=14))
+        status_lbl.pack(pady=10)
+        
+        device_list = ctk.CTkScrollableFrame(dialog, height=300)
+        device_list.pack(fill="both", expand=True, padx=10, pady=10)
+        
+        def on_scan_results(devices):
+            def _update_ui():
+                status_lbl.configure(text=f"Found {len(devices)} devices.")
+                for widget in device_list.winfo_children(): widget.destroy()
+                
+                if not devices:
+                    ctk.CTkLabel(device_list, text="No fitness devices found.").pack(pady=10)
+                    return
+
+                for dev in devices:
+                    name = dev.name or dev.address
+                    rssi = getattr(dev, 'rssi', "N/A")
+                    btn = ctk.CTkButton(device_list, text=f"{name} ({rssi} dBm)", 
+                                        anchor="w",
+                                        command=lambda d=dev: connect(d))
+                    btn.pack(fill="x", pady=2)
+            
+            self.after(0, _update_ui)
+        
+        def connect(device):
+            self.after(0, lambda: status_lbl.configure(text=f"Connecting to {device.name}..."))
+            
+            def success():
+                def _succ():
+                    messagebox.showinfo("Success", f"Connected to {device.name}!")
+                    status_lbl.configure(text=f"Connected: {device.name}")
+                    dialog.destroy()
+                self.after(0, _succ)
+                
+            def fail(err):
+                def _fail():
+                    messagebox.showerror("Error", f"Failed: {err}")
+                    status_lbl.configure(text="Connection Failed")
+                self.after(0, _fail)
+                
+            bluetooth_module.bt_manager.connect_device(device.address, success, fail)
+
+        # Start Scan
+        bluetooth_module.bt_manager.start_scan(on_scan_results)
 
     def open_language_dialog(self):
         dialog = ctk.CTkToplevel(self)
