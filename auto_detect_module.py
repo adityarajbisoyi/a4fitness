@@ -65,7 +65,23 @@ class AutoDetector:
             return "Squats"
 
 def run_auto_mode():
-    cap = cv2.VideoCapture(0)
+    # Try to open camera with error handling
+    cap = None
+    for camera_index in [0, 1, 2]:
+        cap = cv2.VideoCapture(camera_index)
+        if cap.isOpened():
+            print(f"✅ Camera opened successfully on index {camera_index}")
+            break
+        cap.release()
+    
+    if not cap or not cap.isOpened():
+        print("❌ ERROR: Could not access camera!")
+        print("Please check:")
+        print("  1. Camera is connected")
+        print("  2. No other application is using the camera")
+        print("  3. Camera permissions are granted")
+        return
+    
     auto_detector = AutoDetector()
     detector = pm.poseDetector()
     coach = ai_coach_module.AICoach()
