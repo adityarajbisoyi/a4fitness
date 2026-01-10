@@ -65,14 +65,43 @@ This application uses your webcam to analyze your exercise form in real-time, co
 
 ## 🚀 How to Run
 
-Simply run the main application file:
+### Main Application (Recommended)
+Run the full GUI application with all features:
 
 ```bash
 python app.py
 ```
 
-*   **Auto Mode**: Click "🤖 Auto Detect" to let the AI guess your workout.
-*   **Weight Scanner**: Run `python weight_detect_module.py` to calibrate weights.
+Or use the startup script with dependency checks:
+
+```bash
+python start.py
+```
+
+### Demo Scripts
+- **Simple Pushup Counter**: `python main.py` (Basic demo, no GUI)
+- **Auto Mode**: Click "🤖 Auto Detect" in the app to let the AI guess your workout
+- **Weight Scanner**: Run `python weight_detect_module.py` to calibrate weights
+
+---
+
+## 🔧 Troubleshooting
+
+### Camera Issues
+- **Error: "Could not access camera"**
+  - Make sure your webcam is connected
+  - Close other applications using the camera (Zoom, Teams, etc.)
+  - Try running with administrator privileges
+  - Check camera permissions in Windows Settings
+
+### Missing Dependencies
+- Run `pip install -r requirements.txt` to install all packages
+- If Bluetooth features don't work, install: `pip install bleak`
+
+### Application Won't Start
+- Make sure you're running `python app.py` NOT `python main.py`
+- Check that Python 3.10+ is installed: `python --version`
+- Verify all dependencies are installed
 
 ---
 
