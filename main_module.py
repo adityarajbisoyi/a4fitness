@@ -10,7 +10,23 @@ import ai_coach_module
 import face_emotion_module
 
 def run_pushup():
-    cap = cv2.VideoCapture(0)
+    # Try to open camera with error handling
+    cap = None
+    for camera_index in [0, 1, 2]:
+        cap = cv2.VideoCapture(camera_index)
+        if cap.isOpened():
+            print(f"✅ Camera opened successfully on index {camera_index}")
+            break
+        cap.release()
+    
+    if not cap or not cap.isOpened():
+        print("❌ ERROR: Could not access camera!")
+        print("Please check:")
+        print("  1. Camera is connected")
+        print("  2. No other application is using the camera")
+        print("  3. Camera permissions are granted")
+        return
+    
     detector = pm.poseDetector()
     coach = ai_coach_module.AICoach()
     emotion_detector = face_emotion_module.EmotionDetector()
@@ -111,13 +127,24 @@ def run_pushup():
             cv2.putText(img, f"Form Score: {int(score)}%", (10, 30), 
                         cv2.FONT_HERSHEY_PLAIN, 2, (0, 0, 255) if score < 70 else (0, 255, 0), 2)
 
-            # Face Emotion Detection
-            emotion, img = emotion_detector.detect_emotion(img)
+        # Face Emotion Detection (always try, even if no pose detected)
+        try:
+            emotion, img = emotion_detector.detect_emotion(img, draw=True)
+            
+            # Display emotion prominently at top
+            cv2.rectangle(img, (250, 0), (500, 40), (50, 50, 50), cv2.FILLED)
+            cv2.putText(img, f"Mood: {emotion}", (260, 30), 
+                       cv2.FONT_HERSHEY_PLAIN, 2, (0, 255, 255), 2)
             
             # Motivational Voice check
-            if emotion == "Strain 😫" and per > 50: # Straining during rep
+            if len(lmList) != 0 and emotion == "Strain 😫" and per > 50: # Straining during rep
                  # This would be where we add specific motivational voice lines
-                 pass 
+                 pass
+        except Exception as e:
+            # Silently handle emotion detection errors
+            cv2.putText(img, "Emotion: N/A", (260, 30), 
+                       cv2.FONT_HERSHEY_PLAIN, 1, (128, 128, 128), 1)
+
 
         cv2.imshow('Pushup counter', img)
         if cv2.waitKey(10) & 0xFF == ord('q'):

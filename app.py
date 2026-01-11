@@ -100,8 +100,16 @@ class FitnessApp(ctk.CTk):
                                         command=self.open_bluetooth_scanner)
         self.ble_button.grid(row=8, column=0, sticky="ew", padx=10, pady=5)
 
+        # Voice Control Status Indicator
+        self.voice_status_label = ctk.CTkLabel(
+            self.navigation_frame, 
+            text="🎙️ Voice: Initializing...",
+            font=ctk.CTkFont(size=12),
+            text_color="gray"
+        )
+        self.voice_status_label.grid(row=9, column=0, sticky="ew", padx=10, pady=10)
 
-        self.navigation_frame.grid_rowconfigure(9, weight=1) # Spacer
+        self.navigation_frame.grid_rowconfigure(10, weight=1) # Spacer
 
 
         # Create home frame
@@ -278,8 +286,10 @@ class FitnessApp(ctk.CTk):
         self.voice_controller = voice_control_module.VoiceController(self.process_voice_command)
         try:
             self.voice_controller.start_listening()
+            self.voice_status_label.configure(text="🎙️ Voice: Ready", text_color="green")
         except Exception as e:
             print(f"Voice Control unavailable: {e}")
+            self.voice_status_label.configure(text="🎙️ Voice: Unavailable", text_color="red")
 
     def process_voice_command(self, command):
         print(f"App received command: {command}")
@@ -466,29 +476,34 @@ class FitnessApp(ctk.CTk):
         
         self.running_exercise = True
         
-        def _target():
-            try:
-                target_func()
-            finally:
-                # Update stats after exercise finishes
-                self.after(100, self.update_user_stats_display)
-                self.running_exercise = False
-
         # Run in a separate thread to keep GUI responsive
         t = threading.Thread(target=self._wrapper, args=(target_func,))
         t.daemon = True
         t.start()
 
     def _wrapper(self, func):
-        # Modification: Calling update stats after function
+        """Wrapper to run exercise functions with proper error handling"""
         try:
             func()
         except Exception as e:
-            print(f"Error: {e}")
+            error_msg = str(e)
+            print(f"Exercise Error: {error_msg}")
+            
+            # Show error to user on main thread
+            def show_error():
+                messagebox.showerror(
+                    "Exercise Error", 
+                    f"An error occurred:\n\n{error_msg}\n\nPlease check:\n"
+                    "• Camera is connected\n"
+                    "• No other app is using the camera\n"
+                    "• All dependencies are installed"
+                )
+            
+            self.after(0, show_error)
         finally:
-             self.running_exercise = False
-             # Schedule GUI update on main thread
-             self.after(100, self.update_user_stats_display)
+            self.running_exercise = False
+            # Schedule GUI update on main thread
+            self.after(100, self.update_user_stats_display)
 
     def start_pushup(self):
         tutorial_module.show_tutorial(self, "Pushups")
