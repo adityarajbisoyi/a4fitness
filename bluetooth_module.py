@@ -1,8 +1,17 @@
 
 import asyncio
-from bleak import BleakScanner, BleakClient
 import threading
 import time
+
+# Try to import Bluetooth libraries
+try:
+    from bleak import BleakScanner, BleakClient
+    BLUETOOTH_AVAILABLE = True
+except ImportError:
+    print("⚠️  Bluetooth support not available (bleak not installed)")
+    BLUETOOTH_AVAILABLE = False
+    BleakScanner = None
+    BleakClient = None
 
 # Standard Heart Rate UUIDs
 HR_SERVICE_UUID = "0000180d-0000-1000-8000-00805f9b34fb"
@@ -18,24 +27,34 @@ class BluetoothManager:
         
     def start_scan(self, callback):
         """ Scans for BLE devices in a separate thread """
+        if not BLUETOOTH_AVAILABLE:
+            print("❌ Bluetooth not available")
+            callback([])
+            return
+            
         self.is_scanning = True
         
         def _scan():
             async def run():
-                # Try to prefer Heart Rate devices
-                # We can't strictly filter by UUID during discover because some devices don't advertise it until connected.
-                # But we can check `metadata` if needed.
-                # For now, let's just show everything but sort better.
-                devices = await BleakScanner.discover(timeout=5.0)
-                
-                # Sort by RSSI if available, else default to -100
-                self.scan_results = sorted(devices, key=lambda d: getattr(d, 'rssi', -100), reverse=True)
-                
-                # Filter out devices with no name
-                filtered = [d for d in self.scan_results if d.name and "Unknown" not in d.name]
-                print(f"Found {len(filtered)} named devices.")
-                self.is_scanning = False
-                callback(filtered)
+                try:
+                    # Try to prefer Heart Rate devices
+                    # We can't strictly filter by UUID during discover because some devices don't advertise it until connected.
+                    # But we can check `metadata` if needed.
+                    # For now, let's just show everything but sort better.
+                    devices = await BleakScanner.discover(timeout=5.0)
+                    
+                    # Sort by RSSI if available, else default to -100
+                    self.scan_results = sorted(devices, key=lambda d: getattr(d, 'rssi', -100), reverse=True)
+                    
+                    # Filter out devices with no name
+                    filtered = [d for d in self.scan_results if d.name and "Unknown" not in d.name]
+                    print(f"Found {len(filtered)} named devices.")
+                    self.is_scanning = False
+                    callback(filtered)
+                except Exception as e:
+                    print(f"Bluetooth scan error: {e}")
+                    self.is_scanning = False
+                    callback([])
                 
             asyncio.run(run())
             
