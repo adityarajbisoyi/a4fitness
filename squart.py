@@ -1,6 +1,5 @@
 import cv2
 import numpy as np
-import time
 import PoseModule as pm
 import database
 import calories_module

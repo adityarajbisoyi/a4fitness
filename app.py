@@ -1,9 +1,7 @@
 import customtkinter as ctk
-import os
 import sys
 import threading
 from tkinter import messagebox
-import pyttsx3
 import database
 import gamification_module
 import tutorial_module
@@ -12,9 +10,6 @@ import voice_control_module
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from PIL import Image, ImageTk
-import ai_coach_module
-import face_emotion_module
-import face_emotion_module
 import auto_detect_module
 import bluetooth_module
 import time
