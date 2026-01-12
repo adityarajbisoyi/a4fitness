@@ -1,0 +1,12 @@
+
+customtkinter
+opencv-python>=4.8.0
+mediapipe==0.10.14
+numpy>=2.0.0,<2.3.0
+Pillow
+matplotlib
+SpeechRecognition
+pyaudio
+bleak
+pyttsx3
+reportlab
