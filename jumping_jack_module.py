@@ -6,6 +6,58 @@ import time
 import database
 import calories_module
 
+class JumpingJackCounter:
+    """Reusable jumping jack counting logic for both standalone and auto-detect modes"""
+    def __init__(self):
+        self.count = 0
+        self.direction = 0  # 0 = arms down, 1 = arms up
+        self.feedback = "Stand Ready"
+    
+    def process_frame(self, lmList):
+        """Process pose and return count increment"""
+        if len(lmList) == 0:
+            return 0, self.feedback
+        
+        left_shoulder_y = lmList[11][2]
+        right_shoulder_y = lmList[12][2]
+        left_wrist_y = lmList[15][2]
+        right_wrist_y = lmList[16][2]
+        
+        left_hip_x = lmList[23][1]
+        right_hip_x = lmList[24][1]
+        left_ankle_x = lmList[27][1]
+        right_ankle_x = lmList[28][1]
+        
+        # Calculate leg spread
+        leg_spread = abs(left_ankle_x - right_ankle_x)
+        hip_width = abs(left_hip_x - right_hip_x)
+        
+        # Hands are UP when BOTH wrists are above shoulders
+        hands_up = (left_wrist_y < left_shoulder_y - 30) and (right_wrist_y < right_shoulder_y - 30)
+        
+        # Legs are SPREAD when ankles are wider apart than hips
+        legs_spread = leg_spread > (hip_width * 1.5)
+        
+        count_increment = 0
+        
+        # Position 1: Arms up, legs spread
+        if hands_up and legs_spread:
+            self.feedback = "Arms Up! ⬆️"
+            if self.direction == 0:
+                count_increment = 0.5
+                self.count += 0.5
+                self.direction = 1
+                
+        # Position 2: Arms down, legs together
+        elif not hands_up and not legs_spread:
+            self.feedback = "Arms Down ⬇️"
+            if self.direction == 1:
+                count_increment = 0.5
+                self.count += 0.5
+                self.direction = 0
+        
+        return count_increment, self.feedback
+
 def run_jumping_jack():
     # Try to open camera with error handling
     cap = None
