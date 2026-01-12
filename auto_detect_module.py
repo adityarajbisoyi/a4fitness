@@ -1,10 +1,7 @@
-
 import cv2
 import numpy as np
 import PoseModule as pm
 import utils
-import time
-import math
 import ai_coach_module
 
 class AutoDetector:
