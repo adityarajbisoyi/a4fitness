@@ -17,6 +17,7 @@ import face_emotion_module
 import face_emotion_module
 import auto_detect_module
 import bluetooth_module
+import time
 
 class FitnessApp(ctk.CTk):
     def __init__(self):
@@ -516,8 +517,8 @@ class FitnessApp(ctk.CTk):
     def start_squat(self):
         tutorial_module.show_tutorial(self, "Squats")
         try:
-            import squat_module
-            self.run_exercise_thread(squat_module.run_squat)
+            import squart
+            self.run_exercise_thread(squart.run_squat)
         except ImportError:
              messagebox.showerror("Error", "Squat module not found.")
 
