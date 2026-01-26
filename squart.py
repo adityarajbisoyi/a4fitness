@@ -80,52 +80,80 @@ def run_squat():
     detector = pm.poseDetector()
     counter = SquatCounter()
     
+    # Create fullscreen window
+    window_name = 'Squat counter'
+    cv2.namedWindow(window_name, cv2.WINDOW_NORMAL)
+    cv2.setWindowProperty(window_name, cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
+    
     while cap.isOpened():
         ret, img = cap.read()  # 640 x 480
         if not ret:
             break
             
         img = cv2.flip(img, 1)
-        # Determine dimensions of video - Help with creation of box in Line 43
-        width = cap.get(3)  # float `width`
-        height = cap.get(4)  # float `height`
-        # print(width, height)
+        h, w, c = img.shape
 
         img = detector.findPose(img, False)
         lmList = detector.findPosition(img, False)
-        # print(lmList)
-        if len(lmList) != 0:
-
-            hip = detector.findAngle(img, 11, 23, 25)
-            knee = detector.findAngle(img, 23, 25, 27)
-            # Percentage of success of pushup
         
         # Use the counter class
         count_increment, feedback = counter.process_frame(lmList, detector)
         
-        if len(lmList) != 0:
-            knee = detector.findAngle(img, 23, 25, 27)
-            per = np.interp(knee, (90, 160), (0, 100))
-            bar = np.interp(knee, (90, 160), (380, 50))
-
-            # Draw Bar
-            if counter.form == 1:
-                cv2.rectangle(img, (580, 50), (600, 380), (0, 255, 0), 3)
-                cv2.rectangle(img, (580, int(bar)), (600, 380), (0, 255, 0), cv2.FILLED)
-                cv2.putText(img, f'{int(per)}%', (565, 430), cv2.FONT_HERSHEY_PLAIN, 2,
-                            (255, 0, 0), 2)
-
-            # Pushup counter
-            cv2.rectangle(img, (0, 380), (100, 480), (0, 255, 0), cv2.FILLED)
-            cv2.putText(img, str(int(counter.count)), (25, 455), cv2.FONT_HERSHEY_PLAIN, 5,
-                        (255, 0, 0), 5)
-
-            # Feedback
-            cv2.rectangle(img, (500, 0), (640, 40), (255, 255, 255), cv2.FILLED)
-            cv2.putText(img, feedback, (500, 40), cv2.FONT_HERSHEY_PLAIN, 2,
-                        (0, 255, 0), 2)
+        # Create semi-transparent top bar
+        overlay = img.copy()
+        cv2.rectangle(overlay, (0, 0), (w, 80), (40, 40, 40), cv2.FILLED)
+        cv2.addWeighted(overlay, 0.7, img, 0.3, 0, img)
         
-        cv2.imshow('Squat counter', img)
+        if len(lmList) != 0:
+            knee = detector.findAngle(img, 11, 13, 15, draw=False)
+            per = np.interp(knee, (90, 160), (0, 100))
+
+            # Draw Progress Bar (right side)
+            if counter.form == 1:
+                bar_x = w - 60
+                bar_width = 30
+                bar_height = h - 200
+                bar_y_start = 100
+                
+                cv2.rectangle(img, (bar_x, bar_y_start), (bar_x + bar_width, bar_y_start + bar_height), (60, 60, 60), cv2.FILLED)
+                cv2.rectangle(img, (bar_x, bar_y_start), (bar_x + bar_width, bar_y_start + bar_height), (200, 200, 200), 2)
+                
+                progress_height = int(np.interp(per, (0, 100), (0, bar_height)))
+                bar_color = (0, 255, 0) if per > 70 else (0, 165, 255) if per > 40 else (0, 100, 255)
+                cv2.rectangle(img, (bar_x, bar_y_start + bar_height - progress_height), 
+                            (bar_x + bar_width, bar_y_start + bar_height), bar_color, cv2.FILLED)
+                
+                cv2.putText(img, f'{int(per)}%', (bar_x - 10, bar_y_start + bar_height + 35), 
+                           cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 255, 255), 2)
+
+        # Counter Panel
+        counter_panel_w = 150
+        counter_panel_h = 120
+        counter_panel_x = 20
+        counter_panel_y = h - counter_panel_h - 20
+        
+        overlay = img.copy()
+        cv2.rectangle(overlay, (counter_panel_x, counter_panel_y), 
+                     (counter_panel_x + counter_panel_w, counter_panel_y + counter_panel_h), 
+                     (40, 40, 40), cv2.FILLED)
+        cv2.addWeighted(overlay, 0.8, img, 0.2, 0, img)
+        cv2.rectangle(img, (counter_panel_x, counter_panel_y), 
+                     (counter_panel_x + counter_panel_w, counter_panel_y + counter_panel_h), 
+                     (0, 200, 255), 3)
+        
+        cv2.putText(img, "REPS", (counter_panel_x + 35, counter_panel_y + 35), 
+                   cv2.FONT_HERSHEY_SIMPLEX, 0.7, (200, 200, 200), 2)
+        cv2.putText(img, str(int(counter.count)), (counter_panel_x + 45, counter_panel_y + 95), 
+                   cv2.FONT_HERSHEY_SIMPLEX, 2.5, (0, 255, 255), 3)
+
+        # Feedback centered at top
+        feedback_color = (0, 255, 0) if feedback in ["Up", "Down"] else (0, 200, 255)
+        text_size = cv2.getTextSize(feedback, cv2.FONT_HERSHEY_SIMPLEX, 1.2, 3)[0]
+        text_x = (w - text_size[0]) // 2
+        cv2.putText(img, feedback, (text_x, 55), 
+                   cv2.FONT_HERSHEY_SIMPLEX, 1.2, feedback_color, 3)
+        
+        cv2.imshow(window_name, img)
         if cv2.waitKey(10) & 0xFF == ord('q'):
             break
 

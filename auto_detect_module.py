@@ -108,6 +108,11 @@ def run_auto_mode():
     pending_counter = 0
 
     utils.speak("Auto detect mode. Perform any exercise and switch between them freely.")
+    
+    # Create fullscreen window
+    window_name = 'Auto-Detection Mode'
+    cv2.namedWindow(window_name, cv2.WINDOW_NORMAL)
+    cv2.setWindowProperty(window_name, cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
 
     while cap.isOpened():
         ret, img = cap.read()
@@ -119,6 +124,11 @@ def run_auto_mode():
         
         img = detector.findPose(img, False)
         lmList = detector.findPosition(img, False)
+        
+        # Create semi-transparent top bar
+        overlay = img.copy()
+        cv2.rectangle(overlay, (0, 0), (w, 100), (40, 40, 40), cv2.FILLED)
+        cv2.addWeighted(overlay, 0.8, img, 0.2, 0, img)
         
         if len(lmList) != 0:
             # Continuously detect exercise type
@@ -147,8 +157,6 @@ def run_auto_mode():
                 
                 # AI Coach Analysis
                 score, ai_feedback = coach.evaluate_squat(lmList)
-                cv2.putText(img, f"Score: {int(score)}%", (w-200, 100), cv2.FONT_HERSHEY_PLAIN, 2, (0, 255, 0), 2)
-                cv2.putText(img, feedback, (w-250, 140), cv2.FONT_HERSHEY_PLAIN, 1.5, (0, 0, 255), 2)
 
             # JUMPING JACKS - Use JumpingJackCounter class
             elif current_exercise == "Jumping Jacks":
@@ -162,25 +170,42 @@ def run_auto_mode():
                 
                 # AI Coach Analysis
                 score, ai_feedback = coach.evaluate_pushup(lmList)
-                cv2.putText(img, f"Score: {int(score)}%", (w-200, 100), cv2.FONT_HERSHEY_PLAIN, 2, (0, 255, 0), 2)
 
-        # DRAW UI
-        # Top Banner
-        cv2.rectangle(img, (0, 0), (w, 80), (0, 0, 0), cv2.FILLED)
-        cv2.putText(img, display_exercise, (20, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 255), 2)
+        # Top Banner - Exercise Name
+        cv2.putText(img, display_exercise, (20, 60), cv2.FONT_HERSHEY_SIMPLEX, 1.5, (0, 255, 255), 3)
         
-        # Stats Panel - All exercise counts
-        y_offset = 120
-        for ex, count in counters.items():
-            color = (0, 255, 0) if ex == current_exercise else (150, 150, 150)
-            cv2.putText(img, f"{ex}: {count}", (20, y_offset), cv2.FONT_HERSHEY_PLAIN, 2, color, 2)
-            y_offset += 40
-            
         # Show pending detection
         if pending_state != current_exercise and pending_state != "Scanning":
-            cv2.putText(img, f"Detecting: {pending_state}...", (20, h-40), cv2.FONT_HERSHEY_PLAIN, 1.5, (255, 200, 0), 2)
+            progress = int((pending_counter / 15) * 100)
+            cv2.putText(img, f"Detecting: {pending_state}... {progress}%", (w - 400, 70), 
+                       cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 200, 0), 2)
+        
+        # Stats Panel - Show all exercise counts (left side)
+        stats_panel_x = 20
+        stats_panel_y = 140
+        stats_panel_w = 280
+        stats_panel_h = 40 + (len(counters) * 50)
+        
+        overlay = img.copy()
+        cv2.rectangle(overlay, (stats_panel_x, stats_panel_y), 
+                     (stats_panel_x + stats_panel_w, stats_panel_y + stats_panel_h), 
+                     (40, 40, 40), cv2.FILLED)
+        cv2.addWeighted(overlay, 0.85, img, 0.15, 0, img)
+        cv2.rectangle(img, (stats_panel_x, stats_panel_y), 
+                     (stats_panel_x + stats_panel_w, stats_panel_y + stats_panel_h), 
+                     (0, 200, 255), 2)
+        
+        cv2.putText(img, "EXERCISE STATS", (stats_panel_x + 50, stats_panel_y + 30), 
+                   cv2.FONT_HERSHEY_SIMPLEX, 0.7, (200, 200, 200), 2)
+        
+        y_offset = stats_panel_y + 70
+        for ex, count in counters.items():
+            color = (0, 255, 255) if ex == current_exercise else (150, 150, 150)
+            cv2.putText(img, f"{ex}: {count}", (stats_panel_x + 20, y_offset), 
+                       cv2.FONT_HERSHEY_SIMPLEX, 0.8, color, 2)
+            y_offset += 50
 
-        cv2.imshow('Auto-Detection Mode', img)
+        cv2.imshow(window_name, img)
         if cv2.waitKey(10) & 0xFF == ord('q'):
             break
 
