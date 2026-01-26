@@ -35,9 +35,6 @@ class SquatCounter:
             self.form = 1
             if not len(self.arr):
                 self.arr.append(self.shoulder_level)
-            else:
-                current_level = lmList[11][2]
-                difference = abs(self.arr[0] - current_level)
         
         count_increment = 0
         
@@ -53,6 +50,7 @@ class SquatCounter:
                     self.feedback = "Fix Form"
             
             if per < 15:
+                difference = 0
                 if not len(self.arr):
                     self.arr.append(self.shoulder_level)
                 else:
