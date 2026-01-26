@@ -62,13 +62,13 @@ class EmotionDetector:
                     
                     # Improved emotion detection logic
                     if avg_corner_y < avg_lip_y - 5:  # Corners lifted (smile)
-                        emotion = "Happy 😃"
+                        emotion = "Happy"
                     elif mouth_height > 25:  # Mouth open wide
-                        emotion = "Strain 😫"
+                        emotion = "Strain"
                     elif mouth_height > 15:  # Mouth slightly open
-                        emotion = "Focused 😐"
+                        emotion = "Focused"
                     else:
-                        emotion = "Neutral 😶"
+                        emotion = "Neutral"
                         
                     # Draw emotion text prominently
                     if draw:

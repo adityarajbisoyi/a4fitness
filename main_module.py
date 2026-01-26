@@ -82,6 +82,11 @@ def run_pushup():
     counter = PushupCounter()
     score = 0
     last_feedback = ""
+    
+    # Create named window and set it to fullscreen
+    window_name = 'Pushup counter'
+    cv2.namedWindow(window_name, cv2.WINDOW_NORMAL)
+    cv2.setWindowProperty(window_name, cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
 
     while cap.isOpened():
         ret, img = cap.read()  # 640 x 480
@@ -97,8 +102,16 @@ def run_pushup():
         img = detector.findPose(img, False)
         lmList = detector.findPosition(img, False)
         
+        # Get screen dimensions for responsive UI
+        h, w, c = img.shape
+        
         # Use the counter class
         count_increment, feedback = counter.process_frame(lmList, detector)
+        
+        # Create semi-transparent overlay for top info bar
+        overlay = img.copy()
+        cv2.rectangle(overlay, (0, 0), (w, 80), (40, 40, 40), cv2.FILLED)
+        cv2.addWeighted(overlay, 0.7, img, 0.3, 0, img)
         
         if len(lmList) != 0:
             elbow = detector.findAngle(img, 11, 13, 15)
@@ -107,7 +120,7 @@ def run_pushup():
             per = np.interp(elbow, (90, 160), (0, 100))
             
             # Bar to show Pushup progress
-            bar = np.interp(elbow, (90, 160), (380, 50))
+            bar = np.interp(elbow, (90, 160), (h-100, 100))
             
             # AI Coach Analysis
             score, detailed_feedback = coach.evaluate_pushup(lmList)
@@ -124,45 +137,82 @@ def run_pushup():
 
             print(counter.count)
 
-            # Draw Bar
+            # Draw Progress Bar (right side, cleaner design)
             if counter.form == 1:
-                cv2.rectangle(img, (580, 50), (600, 380), (0, 255, 0), 3)
-                cv2.rectangle(img, (580, int(bar)), (600, 380), (0, 255, 0), cv2.FILLED)
-                cv2.putText(img, f'{int(per)}%', (565, 430), cv2.FONT_HERSHEY_PLAIN, 2,
-                            (255, 0, 0), 2)
+                bar_x = w - 60
+                bar_width = 30
+                bar_height = h - 200
+                bar_y_start = 100
+                
+                # Background bar
+                cv2.rectangle(img, (bar_x, bar_y_start), (bar_x + bar_width, bar_y_start + bar_height), (60, 60, 60), cv2.FILLED)
+                cv2.rectangle(img, (bar_x, bar_y_start), (bar_x + bar_width, bar_y_start + bar_height), (200, 200, 200), 2)
+                
+                # Progress bar with gradient effect
+                progress_height = int(np.interp(per, (0, 100), (0, bar_height)))
+                bar_color = (0, 255, 0) if per > 70 else (0, 165, 255) if per > 40 else (0, 100, 255)
+                cv2.rectangle(img, (bar_x, bar_y_start + bar_height - progress_height), 
+                            (bar_x + bar_width, bar_y_start + bar_height), bar_color, cv2.FILLED)
+                
+                # Percentage text below bar
+                cv2.putText(img, f'{int(per)}%', (bar_x - 10, bar_y_start + bar_height + 35), 
+                           cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 255, 255), 2)
 
-            # Pushup counter
-            cv2.rectangle(img, (0, 380), (100, 480), (0, 255, 0), cv2.FILLED)
-            cv2.putText(img, str(int(counter.count)), (25, 455), cv2.FONT_HERSHEY_PLAIN, 5,
-                        (255, 0, 0), 5)
+        # Counter Display (left side with modern panel)
+        counter_panel_w = 150
+        counter_panel_h = 120
+        counter_panel_x = 20
+        counter_panel_y = h - counter_panel_h - 20
+        
+        # Semi-transparent background
+        overlay = img.copy()
+        cv2.rectangle(overlay, (counter_panel_x, counter_panel_y), 
+                     (counter_panel_x + counter_panel_w, counter_panel_y + counter_panel_h), 
+                     (40, 40, 40), cv2.FILLED)
+        cv2.addWeighted(overlay, 0.8, img, 0.2, 0, img)
+        
+        # Border
+        cv2.rectangle(img, (counter_panel_x, counter_panel_y), 
+                     (counter_panel_x + counter_panel_w, counter_panel_y + counter_panel_h), 
+                     (0, 200, 255), 3)
+        
+        # Label
+        cv2.putText(img, "REPS", (counter_panel_x + 35, counter_panel_y + 35), 
+                   cv2.FONT_HERSHEY_SIMPLEX, 0.7, (200, 200, 200), 2)
+        
+        # Count
+        cv2.putText(img, str(int(counter.count)), (counter_panel_x + 45, counter_panel_y + 95), 
+                   cv2.FONT_HERSHEY_SIMPLEX, 2.5, (0, 255, 255), 3)
 
-            # Feedback
-            cv2.rectangle(img, (500, 0), (640, 40), (255, 255, 255), cv2.FILLED)
-            cv2.putText(img, feedback, (500, 40), cv2.FONT_HERSHEY_PLAIN, 2,
-                        (0, 255, 0), 2)
+        # Top Info Bar - Form Score (left)
+        form_score_color = (0, 255, 0) if score > 70 else (0, 200, 255) if score > 50 else (0, 100, 255)
+        cv2.putText(img, f"FORM: {int(score)}%", (20, 50), 
+                   cv2.FONT_HERSHEY_SIMPLEX, 1, form_score_color, 2)
+        
+        # Top Info Bar - Feedback (center)
+        feedback_color = (0, 255, 0) if feedback in ["Up", "Down"] else (0, 200, 255)
+        text_size = cv2.getTextSize(feedback, cv2.FONT_HERSHEY_SIMPLEX, 1.2, 3)[0]
+        text_x = (w - text_size[0]) // 2
+        cv2.putText(img, feedback, (text_x, 55), 
+                   cv2.FONT_HERSHEY_SIMPLEX, 1.2, feedback_color, 3)
 
-            # Rep Quality Score Display
-            cv2.rectangle(img, (0, 0), (250, 40), (255, 255, 255), cv2.FILLED)
-            cv2.putText(img, f"Form Score: {int(score)}%", (10, 30), 
-                        cv2.FONT_HERSHEY_PLAIN, 2, (0, 0, 255) if score < 70 else (0, 255, 0), 2)
-
-        # Face Emotion Detection (always try, even if no pose detected)
+        # Face Emotion Detection
+        emotion = "Neutral"
         try:
-            emotion, img = emotion_detector.detect_emotion(img, draw=True)
+            emotion, img = emotion_detector.detect_emotion(img, draw=False)
             
-            # Display emotion prominently at top
-            cv2.rectangle(img, (250, 0), (500, 40), (50, 50, 50), cv2.FILLED)
-            cv2.putText(img, f"Mood: {emotion}", (260, 30), 
-                       cv2.FONT_HERSHEY_PLAIN, 2, (0, 255, 255), 2)
+            # Display emotion at top right
+            mood_text = f"MOOD: {emotion}"
+            text_size = cv2.getTextSize(mood_text, cv2.FONT_HERSHEY_SIMPLEX, 0.9, 2)[0]
+            cv2.putText(img, mood_text, (w - text_size[0] - 20, 50), 
+                       cv2.FONT_HERSHEY_SIMPLEX, 0.9, (255, 255, 100), 2)
             
             # Motivational Voice check
-            if len(lmList) != 0 and emotion == "Strain 😫" and per > 50: # Straining during rep
-                 # This would be where we add specific motivational voice lines
+            if len(lmList) != 0 and emotion == "Strain" and per > 50:
                  pass
         except Exception as e:
-            # Silently handle emotion detection errors
-            cv2.putText(img, "Emotion: N/A", (260, 30), 
-                       cv2.FONT_HERSHEY_PLAIN, 1, (128, 128, 128), 1)
+            cv2.putText(img, "MOOD: --", (w - 150, 50), 
+                       cv2.FONT_HERSHEY_SIMPLEX, 0.9, (128, 128, 128), 2)
 
 
         cv2.imshow('Pushup counter', img)

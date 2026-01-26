@@ -86,6 +86,11 @@ def run_jumping_jack():
     # Flag for welcome message
     welcome_said = False
     last_count = 0
+    
+    # Create fullscreen window
+    window_name = 'Jumping Jack Counter'
+    cv2.namedWindow(window_name, cv2.WINDOW_NORMAL)
+    cv2.setWindowProperty(window_name, cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
 
     while cap.isOpened():
         if not welcome_said:
@@ -101,6 +106,12 @@ def run_jumping_jack():
             break
             
         img = cv2.flip(img, 1)
+        h, w, c = img.shape
+        
+        # Create semi-transparent top bar
+        overlay = img.copy()
+        cv2.rectangle(overlay, (0, 0), (w, 80), (40, 40, 40), cv2.FILLED)
+        cv2.addWeighted(overlay, 0.7, img, 0.3, 0, img)
         
         img = detector.findPose(img, False)
         lmList = detector.findPosition(img, False)
@@ -139,19 +150,18 @@ def run_jumping_jack():
             # Jumping Jack Logic
             # Position 1: Arms up, legs spread
             if hands_up and legs_spread:
-                feedback = "Arms Up! ⬆️"
+                feedback = "Arms Up"
                 if direction == 0:
                     count += 0.5
                     direction = 1
                     
             # Position 2: Arms down, legs together
             elif not hands_up and not legs_spread:
-                feedback = "Arms Down ⬇️"
+                feedback = "Arms Down"
                 if direction == 1:
                     count += 0.5
                     direction = 0
             else:
-                # Partial movement
                 if hands_up:
                     feedback = "Spread Legs"
                 elif legs_spread:
@@ -160,31 +170,40 @@ def run_jumping_jack():
                     feedback = "Start Movement"
             
             # Draw visual indicators
-            # Show hand position indicator
-            hand_color = (0, 255, 0) if hands_up else (0, 0, 255)
-            cv2.circle(img, (lmList[15][1], lmList[15][2]), 15, hand_color, cv2.FILLED)  # Left wrist
-            cv2.circle(img, (lmList[16][1], lmList[16][2]), 15, hand_color, cv2.FILLED)  # Right wrist
+            hand_color = (0, 255, 0) if hands_up else (100, 100, 100)
+            leg_color = (0, 255, 0) if legs_spread else (100, 100, 100)
             
-            # Show leg position indicator
-            leg_color = (0, 255, 0) if legs_spread else (0, 0, 255)
-            cv2.circle(img, (lmList[27][1], lmList[27][2]), 15, leg_color, cv2.FILLED)  # Left ankle
-            cv2.circle(img, (lmList[28][1], lmList[28][2]), 15, leg_color, cv2.FILLED)  # Right ankle
-            
-            # Counter display
-            cv2.rectangle(img, (0, 380), (100, 480), (0, 255, 0), cv2.FILLED)
-            cv2.putText(img, str(int(count)), (25, 455), cv2.FONT_HERSHEY_PLAIN, 5,
-                        (255, 0, 0), 5)
+            cv2.circle(img, (lmList[15][1], lmList[15][2]), 10, hand_color, cv2.FILLED)
+            cv2.circle(img, (lmList[16][1], lmList[16][2]), 10, hand_color, cv2.FILLED)
+            cv2.circle(img, (lmList[27][1], lmList[27][2]), 10, leg_color, cv2.FILLED)
+            cv2.circle(img, (lmList[28][1], lmList[28][2]), 10, leg_color, cv2.FILLED)
 
-            # Feedback display
-            cv2.rectangle(img, (450, 0), (640, 40), (255, 255, 255), cv2.FILLED)
-            cv2.putText(img, feedback, (460, 30), cv2.FONT_HERSHEY_PLAIN, 1.5,
-                        (0, 255, 0), 2)
-            
-            # Status indicators
-            cv2.putText(img, f"Hands: {'UP' if hands_up else 'DOWN'}", (10, 30), 
-                       cv2.FONT_HERSHEY_PLAIN, 1.5, hand_color, 2)
-            cv2.putText(img, f"Legs: {'SPREAD' if legs_spread else 'TOGETHER'}", (10, 60), 
-                       cv2.FONT_HERSHEY_PLAIN, 1.5, leg_color, 2)
+        # Counter Panel
+        counter_panel_w = 150
+        counter_panel_h = 120
+        counter_panel_x = 20
+        counter_panel_y = h - counter_panel_h - 20
+        
+        overlay = img.copy()
+        cv2.rectangle(overlay, (counter_panel_x, counter_panel_y), 
+                     (counter_panel_x + counter_panel_w, counter_panel_y + counter_panel_h), 
+                     (40, 40, 40), cv2.FILLED)
+        cv2.addWeighted(overlay, 0.8, img, 0.2, 0, img)
+        cv2.rectangle(img, (counter_panel_x, counter_panel_y), 
+                     (counter_panel_x + counter_panel_w, counter_panel_y + counter_panel_h), 
+                     (0, 200, 255), 3)
+        
+        cv2.putText(img, "REPS", (counter_panel_x + 35, counter_panel_y + 35), 
+                   cv2.FONT_HERSHEY_SIMPLEX, 0.7, (200, 200, 200), 2)
+        cv2.putText(img, str(int(count)), (counter_panel_x + 45, counter_panel_y + 95), 
+                   cv2.FONT_HERSHEY_SIMPLEX, 2.5, (0, 255, 255), 3)
+
+        # Feedback centered at top
+        feedback_color = (0, 255, 0) if feedback in ["Arms Up", "Arms Down"] else (0, 200, 255)
+        text_size = cv2.getTextSize(feedback, cv2.FONT_HERSHEY_SIMPLEX, 1.2, 3)[0]
+        text_x = (w - text_size[0]) // 2
+        cv2.putText(img, feedback, (text_x, 55), 
+                   cv2.FONT_HERSHEY_SIMPLEX, 1.2, feedback_color, 3)
 
         cv2.imshow('Jumping Jack Counter', img)
         if cv2.waitKey(10) & 0xFF == ord('q'):
