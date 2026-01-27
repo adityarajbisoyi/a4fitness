@@ -1,7 +1,7 @@
 
 customtkinter
 opencv-python>=4.8.0
-mediapipe==0.10.14
+mediapipe>=0.10.9
 numpy>=2.0.0,<2.3.0
 Pillow
 matplotlib
@@ -10,3 +10,9 @@ pyaudio
 bleak
 pyttsx3
 reportlab
+python-dotenv
+elevenlabs
+google-generativeai
+protobuf>=4.25.3,<5.0.0
+grpcio-status>=1.48.0,<1.60.0>=0.8.0
+protobuf>=4.25.3,<5

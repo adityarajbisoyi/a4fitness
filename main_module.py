@@ -9,11 +9,13 @@ import face_emotion_module
 
 class PushupCounter:
     """Reusable pushup counting logic for both standalone and auto-detect modes"""
-    def __init__(self):
+    def __init__(self, ai_coach=None):
         self.count = 0
         self.direction = 0
         self.form = 0
         self.feedback = "Fix Form"
+        self.ai_coach = ai_coach
+        self.last_rep_update = 0
     
     def process_frame(self, lmList, detector):
         """Process pose and return count increment"""
@@ -43,6 +45,10 @@ class PushupCounter:
                         count_increment = 0.5
                         self.count += 0.5
                         self.direction = 1
+                        # Notify AI Coach
+                        if self.ai_coach and int(self.count) != self.last_rep_update:
+                            self.last_rep_update = int(self.count)
+                            self.ai_coach.update_rep_count(int(self.count))
                 else:
                     self.feedback = "Fix Form"
             
@@ -53,12 +59,20 @@ class PushupCounter:
                         count_increment = 0.5
                         self.count += 0.5
                         self.direction = 0
+                        # Notify AI Coach
+                        if self.ai_coach and int(self.count) != self.last_rep_update:
+                            self.last_rep_update = int(self.count)
+                            self.ai_coach.update_rep_count(int(self.count))
                 else:
                     self.feedback = "Fix Form"
         
+        # Notify AI Coach about form issues
+        if self.ai_coach and self.feedback:
+            self.ai_coach.notify_exercise_feedback(self.feedback)
+        
         return count_increment, self.feedback
 
-def run_pushup():
+def run_pushup(ai_coach=None):
     # Try to open camera with error handling
     cap = None
     for camera_index in [0, 1, 2]:
@@ -79,7 +93,7 @@ def run_pushup():
     detector = pm.poseDetector()
     coach = ai_coach_module.AICoach()
     emotion_detector = face_emotion_module.EmotionDetector()
-    counter = PushupCounter()
+    counter = PushupCounter(ai_coach=ai_coach)
     score = 0
     last_feedback = ""
     
@@ -88,7 +102,8 @@ def run_pushup():
     cv2.namedWindow(window_name, cv2.WINDOW_NORMAL)
     cv2.setWindowProperty(window_name, cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
 
-    while cap.isOpened():
+    # Check for stop signal from AI coach
+    while cap.isOpened() and (not ai_coach or not getattr(ai_coach, 'stop_exercise_flag', False)):
         ret, img = cap.read()  # 640 x 480
         if not ret:
             break
