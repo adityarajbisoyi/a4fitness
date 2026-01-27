@@ -6,7 +6,7 @@ import calories_module
 
 class SquatCounter:
     """Reusable squat counting logic for both standalone and auto-detect modes"""
-    def __init__(self):
+    def __init__(self, ai_coach=None):
         self.count = 0
         self.direction = 0
         self.form = 0
@@ -14,6 +14,8 @@ class SquatCounter:
         self.arr = []
         self.shoulder_level = 0
         self.feedback = "Fix Form"
+        self.ai_coach = ai_coach
+        self.last_rep_update = 0
     
     def process_frame(self, lmList, detector):
         """Process pose and return count increment"""
@@ -46,6 +48,10 @@ class SquatCounter:
                         count_increment = 0.5
                         self.count += 0.5
                         self.direction = 1
+                        # Notify AI Coach
+                        if self.ai_coach and int(self.count) != self.last_rep_update:
+                            self.last_rep_update = int(self.count)
+                            self.ai_coach.update_rep_count(int(self.count))
                 else:
                     self.feedback = "Fix Form"
             
@@ -63,12 +69,20 @@ class SquatCounter:
                         count_increment = 0.5
                         self.count += 0.5
                         self.direction = 0
+                        # Notify AI Coach
+                        if self.ai_coach and int(self.count) != self.last_rep_update:
+                            self.last_rep_update = int(self.count)
+                            self.ai_coach.update_rep_count(int(self.count))
                 else:
                     self.feedback = "Fix Form"
         
+        # Notify AI Coach about form issues
+        if self.ai_coach and self.feedback:
+            self.ai_coach.notify_exercise_feedback(self.feedback)
+        
         return count_increment, self.feedback
 
-def run_squat():
+def run_squat(ai_coach=None):
     cap = cv2.VideoCapture(0)
     
     if not cap.isOpened():
@@ -76,14 +90,15 @@ def run_squat():
         return
     
     detector = pm.poseDetector()
-    counter = SquatCounter()
+    counter = SquatCounter(ai_coach=ai_coach)
     
     # Create fullscreen window
     window_name = 'Squat counter'
     cv2.namedWindow(window_name, cv2.WINDOW_NORMAL)
     cv2.setWindowProperty(window_name, cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
     
-    while cap.isOpened():
+    # Check for stop signal from AI coach
+    while cap.isOpened() and (not ai_coach or not getattr(ai_coach, 'stop_exercise_flag', False)):
         ret, img = cap.read()  # 640 x 480
         if not ret:
             break
