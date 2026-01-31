@@ -1,4 +1,9 @@
 env
+venv
 __pycache__
 .idea/
+<<<<<<< HEAD
 .env
+=======
+.env
+>>>>>>> 9390ca3b953b3bd31f6ec71a6f09f10a17125402

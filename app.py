@@ -6,7 +6,7 @@ import database
 import gamification_module
 import tutorial_module
 import utility_modules
-import voice_control_module
+import ai_voice_coach
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from PIL import Image, ImageTk
@@ -96,10 +96,10 @@ class FitnessApp(ctk.CTk):
                                         command=self.open_bluetooth_scanner)
         self.ble_button.grid(row=8, column=0, sticky="ew", padx=10, pady=5)
 
-        # Voice Control Status Indicator
+        # AI Voice Coach Status Indicator
         self.voice_status_label = ctk.CTkLabel(
             self.navigation_frame, 
-            text="🎙️ Voice: Initializing...",
+            text="🤖 AI Coach: Initializing...",
             font=ctk.CTkFont(size=12),
             text_color="gray"
         )
@@ -278,40 +278,79 @@ class FitnessApp(ctk.CTk):
         self.update_user_stats_display()
         self.update_quest_display()
 
-        # Voice Control
-        self.voice_controller = voice_control_module.VoiceController(self.process_voice_command)
+        # AI Voice Coach
+        self.ai_coach = ai_voice_coach.AIVoiceCoach(self.process_ai_command)
         try:
-            self.voice_controller.start_listening()
-            self.voice_status_label.configure(text="🎙️ Voice: Ready", text_color="green")
+            self.ai_coach.start_listening()
+            self.voice_status_label.configure(text="🤖 AI Coach: Active", text_color="green")
         except Exception as e:
-            print(f"Voice Control unavailable: {e}")
-            self.voice_status_label.configure(text="🎙️ Voice: Unavailable", text_color="red")
+            print(f"AI Coach unavailable: {e}")
+            self.voice_status_label.configure(text="🤖 AI Coach: Unavailable", text_color="red")
 
-    def process_voice_command(self, command):
-        print(f"App received command: {command}")
+    def process_ai_command(self, command):
+        """Process commands from AI Voice Coach"""
+        print(f"🤖 App received AI command: {command}")
         
         # Helper to run on main thread
         def _execute():
-            if command == "home": self.home_button_event()
-            elif command == "history": self.history_button_event()
-            elif command == "analytics": self.analytics_button_event()
-            elif command == "tools": self.tools_button_event()
-            elif command == "stop": 
-                if self.running_exercise:
-                    # Stopping is handled by checks in loops usually, but we can try to force it
-                    # For now just print, stopping threads is hard without a flag
-                    pass 
+            action = command.get("action")
             
-            # Exercises
-            elif command == "pushups": self.start_pushup()
-            elif command == "squats": self.start_squat()
-            elif command == "jumping_jacks": self.start_jumping_jack()
-            elif command == "bicep_curls": self.start_bicep_curl()
-            elif command == "lunges": self.start_lunge()
-            elif command == "shoulder_press": self.start_shoulder_press()
-            elif command == "plank": self.start_plank()
-            elif command == "high_knees": self.start_high_knees()
-            elif command == "crunches": self.start_crunches()
+            if action == "navigate":
+                destination = command.get("destination")
+                if destination == "home": self.home_button_event()
+                elif destination == "history": self.history_button_event()
+                elif destination == "analytics": self.analytics_button_event()
+                elif destination == "tools": self.tools_button_event()
+            
+            elif action == "start_exercise":
+                exercise = command.get("exercise")
+                exercise_map = {
+                    "pushups": self.start_pushup,
+                    "squats": self.start_squat,
+                    "jumping_jacks": self.start_jumping_jack,
+                    "bicep_curls": self.start_bicep_curl,
+                    "lunges": self.start_lunge,
+                    "shoulder_press": self.start_shoulder_press,
+                    "plank": self.start_plank,
+                    "high_knees": self.start_high_knees,
+                    "crunches": self.start_crunches,
+                    "auto_detect": self.start_auto_mode
+                }
+                if exercise in exercise_map:
+                    exercise_map[exercise]()
+            
+            elif action == "stop_exercise":
+                self.running_exercise = False
+                print("🛑 Stopping exercise...")
+            
+            elif action == "change_exercise":
+                # Stop current, start new
+                self.running_exercise = False
+                exercise = command.get("exercise")
+                exercise_map = {
+                    "pushups": self.start_pushup,
+                    "squats": self.start_squat,
+                    "jumping_jacks": self.start_jumping_jack,
+                    "bicep_curls": self.start_bicep_curl,
+                    "lunges": self.start_lunge,
+                    "shoulder_press": self.start_shoulder_press,
+                    "plank": self.start_plank,
+                    "high_knees": self.start_high_knees,
+                    "crunches": self.start_crunches,
+                    "auto_detect": self.start_auto_mode
+                }
+                if exercise in exercise_map:
+                    self.after(1000, exercise_map[exercise])  # Small delay before starting new
+            
+            elif action == "rest_break":
+                duration = command.get("duration", 30)
+                print(f"💤 Taking {duration} second rest break...")
+                # Could show a rest timer UI here
+            
+            elif action == "end_session":
+                self.running_exercise = False
+                self.home_button_event()
+                print("✅ Session ended")
 
         self.after(0, _execute)
 
@@ -505,7 +544,7 @@ class FitnessApp(ctk.CTk):
         tutorial_module.show_tutorial(self, "Pushups")
         try:
             import main_module
-            self.run_exercise_thread(main_module.run_pushup)
+            self.run_exercise_thread(lambda: main_module.run_pushup(ai_coach=self.ai_coach))
         except ImportError:
              messagebox.showerror("Error", "Pushup module not found.")
 
@@ -513,7 +552,7 @@ class FitnessApp(ctk.CTk):
         tutorial_module.show_tutorial(self, "Squats")
         try:
             import squart
-            self.run_exercise_thread(squart.run_squat)
+            self.run_exercise_thread(lambda: squart.run_squat(ai_coach=self.ai_coach))
         except ImportError:
              messagebox.showerror("Error", "Squat module not found.")
 
